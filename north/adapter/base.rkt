@@ -1,0 +1,13 @@
+#lang racket/base
+
+(require racket/generic)
+
+(provide (all-defined-out))
+
+(define-generics adapter
+  (adapter-init adapter)
+  (adapter-current-revision adapter)
+  (adapter-apply! adapter migrations script-proc revision-proc))
+
+(struct exn:fail:adapter exn:fail (cause))
+(struct exn:fail:adapter:migration exn:fail:adapter (migration))

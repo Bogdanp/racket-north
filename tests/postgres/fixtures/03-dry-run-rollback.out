@@ -1,0 +1,7 @@
+-- Current revision: 69b4a4717dadb8fe03d847e5e7eaa035
+-- Target revision: fe716365ac516d89fa2811e5e1f1d60e
+
+-- Revision: 69b4a4717dadb8fe03d847e5e7eaa035
+-- Parent: fe716365ac516d89fa2811e5e1f1d60e
+-- Path: /Users/bogdan/sandbox/racket-north/tests/postgres/migrations/20190127-add-last-login-column.sql
+alter table users drop column last_login;
