@@ -189,7 +189,9 @@ EOT
   (with-handlers ([exn:fail:adapter:migration? exit-with-adapter-error!])
     (cond
       [(dry-run?) (for-each (curryr print-dry-run migration-up) plan)]
-      [else (adapter-apply! adapter plan migration-up migration-revision)])))
+      [else (for ([migration plan])
+              (print-message @~a{Applying revision: @(migration-revision migration)})
+              (adapter-apply! adapter (migration-revision migration) (migration-up migration)))])))
 
 (define (handle-rollback)
   (define-values (adapter base current-revision input-revision)
@@ -219,7 +221,9 @@ EOT
   (with-handlers ([exn:fail:adapter:migration? exit-with-adapter-error!])
     (cond
       [(dry-run?) (for-each (curryr print-dry-run migration-down) plan)]
-      [else (adapter-apply! adapter plan migration-down migration-parent)])))
+      [else (for ([migration plan])
+              (print-message @~a{Rolling back revision: @(migration-revision migration)})
+              (adapter-apply! adapter (migration-parent migration) (migration-down migration)))])))
 
 (define (handle-create)
   (define name

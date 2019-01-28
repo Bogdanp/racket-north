@@ -1,8 +1,9 @@
-#lang racket/base
+#lang at-exp racket/base
 
 (require db
          net/url
          racket/contract/base
+         racket/format
          racket/match
          "base.rkt"
          "../base.rkt")
@@ -34,21 +35,19 @@ EOQ
      (define conn (sqlite-adapter-conn ad))
      (query-maybe-value conn "select current_revision from north_schema_version"))
 
-   (define (adapter-apply! ad migrations script-proc revision-proc)
+   (define (adapter-apply! ad revision script)
      (define conn (sqlite-adapter-conn ad))
-     (for ([migration migrations])
-       (with-handlers ([exn:fail:sql?
-                        (lambda (e)
-                          (raise (exn:fail:adapter:migration "failed to apply migration" (current-continuation-marks) e migration)))])
-         (call-with-transaction conn
-           (lambda ()
-             (log-north-sqlite-adapter-debug "running migration ~a" (migration-revision migration))
+     (with-handlers ([exn:fail:sql?
+                      (lambda (e)
+                        (raise (exn:fail:adapter:migration @~a{failed to apply revision '@revision'}
+                                                           (current-continuation-marks) e migration)))])
+       (call-with-transaction conn
+         (lambda ()
+           (log-north-sqlite-adapter-debug "applying revision ~a" revision)
+           (and script (query-exec conn script))
 
-             (define script (script-proc migration))
-             (and script (query-exec conn script))
-
-             (query-exec conn "delete from north_schema_version")
-             (query-exec conn "insert into north_schema_version values ($1)" (revision-proc migration)))))))])
+           (query-exec conn "delete from north_schema_version")
+           (query-exec conn "insert into north_schema_version values ($1)" revision)))))])
 
 (define (url->sqlite-adapter url)
   (define conn
