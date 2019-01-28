@@ -1,4 +1,4 @@
-#lang racket/base
+#lang at-exp racket/base
 
 (require db
          gregor
@@ -29,7 +29,7 @@
    (build-path (current-directory) "migrations")
    (lambda (p)
      (unless (directory-exists? p)
-       (exit-with-errors! (format "error: migrations path '~a' does not exist" p)))
+       (exit-with-errors! @~a{error: migrations path '@p' does not exist}))
 
      p)))
 
@@ -113,10 +113,16 @@ EOT
   (define migration (exn:fail:adapter:migration-migration e))
   (define info (exn:fail:sql-info (exn:fail:adapter-cause e)))
   (apply exit-with-errors!
-   (format "error: failed to apply revision ~a" (migration-revision migration))
-   (format "details:")
-   (for/list ([i info])
-     (format "  ~a: ~a" (car i) (cdr i)))))
+         @~a{error: failed to apply revision @(migration-revision migration)}
+         @~a{details:}
+         (for/list ([i info])
+           @~a{  @(car i): @(cdr i)})))
+
+(define (read-migrations)
+  (with-handlers ([exn:fail:migration?
+                   (lambda (e)
+                     (exit-with-errors! @~a{error: @(exn-message e)}))])
+    (path->migration (migrations-path))))
 
 (define (parse-migrator-args command)
   (define revision
@@ -130,7 +136,7 @@ EOT
                               "The URL with which to connect to the database."
                               (database-url url)]
 
-     [("-m" "--migrations-path") path
+     [("-p" "--migrations-path") path
                                  "The path to the migrations folder."
                                  (migrations-path path)]
 
@@ -139,13 +145,8 @@ EOT
   (unless (database-url)
     (exit-with-errors! "error: no database url"))
 
-  (define root
-    (with-handlers ([exn:fail:migration?
-                     (lambda (e)
-                       (exit-with-errors! (format "error: ~a" (exn-message e))))])
-      (path->migration (migrations-path))))
-
-  (unless root
+  (define base (read-migrations))
+  (unless base
     (exit-with-errors! "error: no migrations"))
 
   (define adapter (make-adapter (database-url)))
@@ -153,14 +154,14 @@ EOT
     (exit-with-errors! "error: no adapter"))
 
   (adapter-init adapter)
-  (values adapter root (adapter-current-revision adapter) revision))
+  (values adapter base (adapter-current-revision adapter) revision))
 
 (define (print-dry-run migration script-proc)
   (unless (string=? (migration-revision migration) "base")
     (displayln "")
-    (displayln (format "-- Revision: ~a" (migration-revision migration)))
-    (displayln (format "-- Parent: ~a" (or (migration-parent migration) "base")))
-    (displayln (format "-- Path: ~a" (migration-path migration)))
+    (displayln @~a{-- Revision: @(migration-revision migration)})
+    (displayln @~a{-- Parent: @(or (migration-parent migration) "base")})
+    (displayln @~a{-- Path: @(migration-path migration)})
     (displayln (or (script-proc migration) "-- no content --"))))
 
 (define (handle-help)
@@ -174,19 +175,19 @@ EOT
    "  rollback      roll back to a previous revision"))
 
 (define (handle-migrate)
-  (define-values (adapter root current-revision input-revision)
+  (define-values (adapter base current-revision input-revision)
     (parse-migrator-args "migrate"))
 
   (define target-revision
-    (or input-revision (migration-revision (migration-most-recent root))))
+    (or input-revision (migration-revision (migration-most-recent base))))
 
-  (displayln (format "-- Current revision: ~a" (or current-revision "base")))
-  (displayln (format "-- Target revision: ~a" target-revision))
+  (displayln @~a{-- Current revision: @(or current-revision "base")})
+  (displayln @~a{-- Target revision: @target-revision})
   (when (equal? current-revision target-revision)
     (exit-with-errors! "error: nothing to do"))
 
   (define plan
-    (migration-plan root current-revision target-revision))
+    (migration-plan base current-revision target-revision))
 
   (with-handlers ([exn:fail:adapter:migration? exit-with-adapter-error!])
     (cond
@@ -194,29 +195,29 @@ EOT
       [else (adapter-apply! adapter plan migration-up migration-revision)])))
 
 (define (handle-rollback)
-  (define-values (adapter root current-revision input-revision)
+  (define-values (adapter base current-revision input-revision)
     (parse-migrator-args "rollback"))
 
   (define target-migration
     (if input-revision
-        (migration-find-revision root input-revision)
-        (migration-find-parent root (or current-revision "base"))))
+        (migration-find-revision base input-revision)
+        (migration-find-parent base (or current-revision "base"))))
 
   (unless target-migration
-    (exit-with-errors! (format "error: invalid revision '~a'" input-revision)))
+    (exit-with-errors! @~a{error: invalid revision '@input-revision'}))
 
   (define target-revision
     (match (migration-revision target-migration)
       ["base" #f]
       [rev rev]))
 
-  (displayln (format "-- Current revision: ~a" (or current-revision "base")))
-  (displayln (format "-- Target revision: ~a" (or target-revision "base")))
+  (displayln @~a{-- Current revision @(or current-revision "base")})
+  (displayln @~a{-- Target revision: @(or target-revision "base")})
   (when (equal? current-revision target-revision)
     (exit-with-errors! "error: nothing to do"))
 
   (define plan
-    (migration-plan root current-revision target-revision))
+    (migration-plan base current-revision target-revision))
 
   (with-handlers ([exn:fail:adapter:migration? exit-with-adapter-error!])
     (cond
@@ -228,7 +229,7 @@ EOT
     (command-line
      #:program (current-program-name)
      #:once-each
-     [("-m" "--migrations-path") path
+     [("-p" "--migrations-path") path
                                  "The path to the migrations folder."
                                  (migrations-path path)]
 
@@ -237,17 +238,32 @@ EOT
   (define revision (generate-revision-id name))
   (define filename (generate-revision-filename name))
   (define content
-    (match (path->migration (migrations-path))
+    (match (read-migrations)
       [#f   (format root-revision-template revision)]
-      [root (format child-revision-template revision (migration-revision (migration-most-recent root)))]))
+      [base (format child-revision-template revision (migration-revision (migration-most-recent base)))]))
 
   (with-handlers ([exn:fail:filesystem:exists?
                    (lambda _
-                     (exit-with-errors! (format "error: output file '~a' already exists" filename)))])
+                     (exit-with-errors! @~a{error: output file '@filename' already exists}))])
     (void (call-with-output-file filename (curry write-string content)))))
 
+(define (handle-show)
+  (define revision
+    (command-line
+     #:program (current-program-name)
+     #:once-each
+     [("-p" "--migrations-path") path
+                                 "The path to the migrations folder."
+                                 (migrations-path path)]
+
+     #:args (revision) revision))
+
+  (define base (read-migrations))
+  (unless base
+    (exit-with-errors! "error: no migrations")))
+
 (define ((handle-unknown command))
-  (exit-with-errors! (format "error: unrecognized command ~a" command)))
+  (exit-with-errors! @~a{error: unrecognized command '@command'}))
 
 (define all-commands
   (hasheq 'create   handle-create
