@@ -15,6 +15,7 @@
   [struct migration ([metadata hash?]
                      [child (or/c false/c migration?)])]
   [path->migration (-> path-string? (or/c false/c migration?))]
+  [migration->list (->* (migration?) (#:stop-at (or/c false/c string?)) (listof migration?))]
   [migration-most-recent (-> migration? migration?)]
   [migration-find-parent (-> migration? string? (or/c false/c migration?))]
   [migration-find-revision (-> migration? string? (or/c false/c migration?))]

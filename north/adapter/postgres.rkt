@@ -1,11 +1,16 @@
 #lang racket/base
 
 (require db
+         net/url
+         racket/contract/base
+         racket/match
          "base.rkt"
          "../base.rkt")
 
 (provide
- (struct-out postgres-adapter))
+ (contract-out
+  [struct postgres-adapter ([conn connection?])]
+  [url->postgres-adapter (-> url? adapter?)]))
 
 (define CREATE-SCHEMA-TABLE #<<EOQ
 create table if not exists north_schema_version(
@@ -44,3 +49,15 @@ EOQ
 
              (query-exec conn "delete from north_schema_version")
              (query-exec conn "insert into north_schema_version values ($1)" (revision-proc migration)))))))])
+
+(define (url->postgres-adapter url)
+  (define database (substring (path->string (url->path url)) 1))
+  (match-define (list _ username password)
+    (regexp-match #px"([^:]+)(?::(.+))?" (or (url-user url) "root")))
+
+  (postgres-adapter
+   (postgresql-connect #:database database
+                       #:server (url-host url)
+                       #:port (url-port url)
+                       #:user username
+                       #:password password)))

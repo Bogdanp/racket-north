@@ -1,11 +1,16 @@
 #lang racket/base
 
 (require db
+         net/url
+         racket/contract/base
+         racket/match
          "base.rkt"
          "../base.rkt")
 
 (provide
- (struct-out sqlite-adapter))
+ (contract-out
+  [struct sqlite-adapter ([conn connection?])]
+  [url->sqlite-adapter (-> url? adapter?)]))
 
 (define CREATE-SCHEMA-TABLE #<<EOQ
 create table if not exists north_schema_version(
@@ -44,3 +49,12 @@ EOQ
 
              (query-exec conn "delete from north_schema_version")
              (query-exec conn "insert into north_schema_version values ($1)" (revision-proc migration)))))))])
+
+(define (url->sqlite-adapter url)
+  (define conn
+    (if (null? (url-path url))
+        (sqlite3-connect #:database 'memory)
+        (sqlite3-connect #:database (url->path url)
+                         #:mode 'create)))
+
+  (sqlite-adapter conn))
