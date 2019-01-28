@@ -31,7 +31,7 @@ It helps you keep your database schema in sync across all your environments.
 
 @section[#:tag "install"]{Installation}
 
-Assing you've already installed Racket, run the following command to
+Assuming you've already installed Racket, run the following command to
 install @exec{north}.
 
 @commandline{$ raco pkg install north}
@@ -58,7 +58,7 @@ would look something like this:
 
 @verbatim|{postgres://example@127.0.0.1/example}|
 
-By default, @exec{north} looks for migrations inside @filepath{migrations}
+By default, @exec{north} looks for migrations inside the @filepath{migrations}
 folder in the current directory so you have to create that folder
 before moving on.
 
