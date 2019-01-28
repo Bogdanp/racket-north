@@ -100,7 +100,11 @@ EOT
 (define (read-migrations)
   (with-handlers ([exn:fail:migration?
                    (lambda (e)
-                     (exit-with-errors! @~a{error: @(exn-message e)}))])
+                     (exit-with-errors! @~a{error: @(exn-message e)}))]
+
+                  [exn:fail?
+                   (lambda (e)
+                     (exit-with-errors! @~a{error: '@(migrations-path)' folder not found}))])
     (path->migration (migrations-path))))
 
 (define (parse-migrator-args command)
