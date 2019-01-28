@@ -119,9 +119,9 @@ EOT
                               "The URL with which to connect to the database."
                               (database-url url)]
 
-     [("-p" "--migrations-path") path
-                                 "The path to the migrations folder."
-                                 (migrations-path path)]
+     [("-p" "--path") path
+                      "The path to the migrations folder."
+                      (migrations-path path)]
 
      #:args ([revision #f]) revision))
 
@@ -232,9 +232,9 @@ EOT
     (command-line
      #:program (current-program-name)
      #:once-each
-     [("-p" "--migrations-path") path
-                                 "The path to the migrations folder."
-                                 (migrations-path path)]
+     [("-p" "--path") path
+                      "The path to the migrations folder."
+                      (migrations-path path)]
 
      #:args (name) name))
 
@@ -255,9 +255,9 @@ EOT
     (command-line
      #:program (current-program-name)
      #:once-each
-     [("-p" "--migrations-path") path
-                                 "The path to the migrations folder."
-                                 (migrations-path path)]
+     [("-p" "--path") path
+                      "The path to the migrations folder."
+                      (migrations-path path)]
 
      #:args ([revision #f]) revision))
 
