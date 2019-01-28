@@ -11,6 +11,22 @@ log() {
     printf "[%s] [postgres] %s\\n" "$(date +%Y-%m-%dT%H:%M:%S)" "$@"
 }
 
+compare() {
+    FIXTURE=$1
+    shift
+    shift
+
+    log "Comparing '$*' to fixture $FIXTURE."
+    OUTPUT=$("$@")
+    if [ ! -f "$FIXTURES_FOLDER/$FIXTURE" ]; then
+        echo "$OUTPUT" > "$FIXTURES_FOLDER/$FIXTURE"
+    else
+        if ! echo "$OUTPUT" | diff - "$FIXTURES_FOLDER/$FIXTURE"; then
+            exit 1
+        fi
+    fi
+}
+
 log "Cleaning up."
 echo "drop database north_tests" | psql -dpostgres || true
 echo "drop role north_tests" | psql -dpostgres || true
@@ -29,30 +45,10 @@ rm "$MIGRATIONS_FOLDER/"*
 log "Copy fixture migrations."
 cp "$FIXTURES_FOLDER/"*.sql "$MIGRATIONS_FOLDER/"
 
-log "Dry run migrations."
-raco north migrate -p "$MIGRATIONS_FOLDER" | \
-    diff - "$FIXTURES_FOLDER/01-dry-run-migrate.out"
-
-log "Force migrate."
-raco north migrate -fp "$MIGRATIONS_FOLDER" | \
-    diff - "$FIXTURES_FOLDER/02-force-run-migrate.out"
-
-log "Dry run rollback."
-raco north rollback -p "$MIGRATIONS_FOLDER" | \
-    diff - "$FIXTURES_FOLDER/03-dry-run-rollback.out"
-
-log "Dry run full rollback."
-raco north rollback -p "$MIGRATIONS_FOLDER" base | \
-    diff - "$FIXTURES_FOLDER/04-dry-run-rollback.out"
-
-log "Force run rollback."
-raco north rollback -fp "$MIGRATIONS_FOLDER" | \
-    diff - "$FIXTURES_FOLDER/05-force-run-rollback.out"
-
-log "Dry run full rollback."
-raco north rollback -p "$MIGRATIONS_FOLDER" base | \
-    diff - "$FIXTURES_FOLDER/06-dry-run-rollback.out"
-
-log "Force run full rollback."
-raco north rollback -fp "$MIGRATIONS_FOLDER" base | \
-    diff - "$FIXTURES_FOLDER/07-force-run-rollback.out"
+compare 01-dry-run-migrate.out -- raco north migrate -p "$MIGRATIONS_FOLDER"
+compare 02-force-run-migrate.out -- raco north migrate -fp "$MIGRATIONS_FOLDER"
+compare 03-dry-run-rollback.out -- raco north rollback -p "$MIGRATIONS_FOLDER"
+compare 04-dry-run-rollback.out -- raco north rollback -p "$MIGRATIONS_FOLDER" base
+compare 05-force-run-rollback.out -- raco north rollback -fp "$MIGRATIONS_FOLDER"
+compare 06-dry-run-rollback.out -- raco north rollback -p "$MIGRATIONS_FOLDER" base
+compare 07-force-run-rollback.out -- raco north rollback -fp "$MIGRATIONS_FOLDER" base

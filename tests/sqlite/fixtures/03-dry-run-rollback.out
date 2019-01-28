@@ -2,6 +2,7 @@
 -- Current revision: 69b4a4717dadb8fe03d847e5e7eaa035
 -- Target revision: fe716365ac516d89fa2811e5e1f1d60e
 
+-- Rolling back revision: 69b4a4717dadb8fe03d847e5e7eaa035
 -- Revision: 69b4a4717dadb8fe03d847e5e7eaa035
 -- Parent: fe716365ac516d89fa2811e5e1f1d60e
 -- Path: /Users/bogdan/sandbox/racket-north/tests/sqlite/migrations/20190127-add-last-login-column.sql

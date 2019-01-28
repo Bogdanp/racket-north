@@ -146,7 +146,6 @@ EOT
 
 (define (print-dry-run migration script-proc)
   (unless (string=? (migration-revision migration) "base")
-    (print-message "")
     (print-message @~a{Revision: @(migration-revision migration)})
     (print-message @~a{Parent: @(migration-parent migration)})
     (print-message @~a{Path: @(migration-path migration)})
@@ -187,11 +186,12 @@ EOT
     (migration-plan base current-revision target-revision))
 
   (with-handlers ([exn:fail:adapter:migration? exit-with-adapter-error!])
-    (cond
-      [(dry-run?) (for-each (curryr print-dry-run migration-up) plan)]
-      [else (for ([migration plan])
-              (print-message @~a{Applying revision: @(migration-revision migration)})
-              (adapter-apply! adapter (migration-revision migration) (migration-up migration)))])))
+    (for ([migration plan])
+      (print-message "")
+      (print-message @~a{Applying revision: @(migration-revision migration)})
+      (if (dry-run?)
+          (print-dry-run migration migration-up)
+          (adapter-apply! adapter (migration-revision migration) (migration-up migration))))))
 
 (define (handle-rollback)
   (define-values (adapter base current-revision input-revision)
@@ -220,11 +220,12 @@ EOT
     (migration-plan base current-revision target-revision))
 
   (with-handlers ([exn:fail:adapter:migration? exit-with-adapter-error!])
-    (cond
-      [(dry-run?) (for-each (curryr print-dry-run migration-down) plan)]
-      [else (for ([migration plan])
-              (print-message @~a{Rolling back revision: @(migration-revision migration)})
-              (adapter-apply! adapter (migration-parent migration) (migration-down migration)))])))
+    (for ([migration plan])
+      (print-message "")
+      (print-message @~a{Rolling back revision: @(migration-revision migration)})
+      (if (dry-run?)
+          (print-dry-run migration migration-down)
+          (adapter-apply! adapter (migration-parent migration) (migration-down migration))))))
 
 (define (handle-create)
   (define name
