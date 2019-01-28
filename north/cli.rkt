@@ -249,14 +249,19 @@ EOT
 (define ((handle-unknown command))
   (exit-with-errors! (format "error: unrecognized command ~a" command)))
 
+(define all-commands
+  (hasheq 'create   handle-create
+          'help     handle-help
+          'migrate  handle-migrate
+          'rollback handle-rollback))
+
 (define-values (command handler args)
   (match (current-command-line-arguments)
-    [(vector "create" args ...)   (values "create" handle-create args)]
-    [(vector "help")              (values "help" handle-help null)]
-    [(vector "migrate" args ...)  (values "migrate" handle-migrate args)]
-    [(vector "rollback" args ...) (values "rollback" handle-rollback args)]
-    [(vector command o ...)       (values command (handle-unknown command) null)]
-    [_                            (values "help" handle-help null)]))
+    [(vector command args ...)
+     (values command (hash-ref all-commands (string->symbol command) (handle-unknown command)) args)]
+
+    [_
+     (values "help" handle-help null)]))
 
 (parameterize ([current-command-line-arguments (list->vector args)]
                [current-program-name (~a (current-program-name) " " command)])
