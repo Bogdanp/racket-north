@@ -210,6 +210,7 @@ EOT
       ["base" #f]
       [rev rev]))
 
+  (print-message @~a{WARNING: Never roll back a production database!})
   (print-message @~a{Current revision: @(or current-revision "base")})
   (print-message @~a{Target revision: @(or target-revision "base")})
   (when (equal? current-revision target-revision)
