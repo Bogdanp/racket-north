@@ -20,20 +20,15 @@
   [migration-find-revision (-> migration? string? (or/c false/c migration?))]
   [migration-plan (-> migration? (or/c false/c string?) (or/c false/c string?) (listof migration?))]))
 
+(define (migration-path? p)
+  (and (not (directory-exists? p))
+       (equal? (path-get-extension p) #".sql")))
+
 (define (read-all-metadata path)
-  (define migration-paths
-    (find-files
-     (lambda (p)
-       (define ext (path-get-extension p))
-       (and ext (bytes=? #".sql" ext)))
+  (map (curryr dynamic-require 'metadata)
+       (find-files migration-path? path)))
 
-     path))
-
-  (map (curryr dynamic-require 'metadata) migration-paths))
-
-(struct migration (metadata child)
-  #:transparent)
-
+(struct migration (metadata child) #:transparent)
 (struct exn:fail:migration exn:fail ())
 
 (define-syntax (make-accessor stx)
@@ -75,25 +70,25 @@
     (define child (and child-metadata (make-migration child-metadata)))
     (migration metadata child))
 
-  (define orphans (hash-ref metadata-by-parent #f #f))
-  (match orphans
-    [#f #f]
+  ;; Base is added in to make operations such as rolling back all the way easier.
+  (define root (hash-ref metadata-by-parent #f #f))
+  (and root (migration (hasheq 'revision "base" 'parent "base")
+                       (make-migration (hash-set root 'parent "base")))))
 
-    [root
-     ;; Base is injected as root's parent to make it easy to roll
-     ;; back all the migrations.
-     (migration (hasheq 'revision "base" 'parent "base")
-                (make-migration (hash-set root 'parent "base")))]))
-
-(define (migration-map node proc #:stop-at [stop-at #f])
+(define (migration->list node #:stop-at [stop-at #f])
   (reverse
    (let loop ([current node]
               [results null])
-     (match (migration-child current)
-       [#f (cons (proc current) results)]
-       [child (if (and stop-at (string=? stop-at (migration-revision current)))
-                  (cons (proc current) results)
-                  (loop child (cons (proc current) results)))]))))
+     (define child (migration-child current))
+     (cond
+       [(not child)
+        (cons current results)]
+
+       [(and stop-at (string=? stop-at (migration-revision current)))
+        (cons current results)]
+
+       [else
+        (loop child (cons current results))]))))
 
 (define (migration-most-recent node)
   (let loop ([current node])
@@ -117,19 +112,19 @@
 
 (define (migration-plan node from-revision to-revision)
   (match (list from-revision to-revision)
-    [(list #f #f) (migration-map node identity)]
-    [(list #f  r) (migration-map node identity #:stop-at r)]
-    [(list r  #f) (reverse (migration-map node identity #:stop-at r))]
+    [(list #f #f) (migration->list node)]
+    [(list #f  r) (migration->list node #:stop-at r)]
+    [(list r  #f) (reverse (migration->list node #:stop-at r))]
 
     [(list r1 r2)
      (define m1 (migration-find-revision node r1))
      (define m2 (migration-find-revision node r2))
      (cond
        [(migration-parent-of? m1 m2)
-        (cdr (migration-map m1 identity #:stop-at r2))]
+        (cdr (migration->list m1 #:stop-at r2))]
 
        [(migration-parent-of? m2 m1)
-        (reverse (cdr (migration-map m2 identity #:stop-at r1)))])]))
+        (reverse (cdr (migration->list m2 #:stop-at r1)))])]))
 
 (module+ test
   (require rackunit)
@@ -141,7 +136,7 @@
                        'up "d up"
                        'down "d down") #f))
 
-  (define root
+  (define base
     (migration (hasheq 'revision "a"
                        'parent #f
                        'name "20190126-create-users-table.sql"
@@ -159,64 +154,64 @@
                                              'down "c down") head))))
 
   (check-equal?
-   (migration-most-recent root)
-   (migration-find-revision root "d"))
+   (migration-most-recent base)
+   (migration-find-revision base "d"))
 
-  (check-false (migration-find-revision root "invalid"))
-  (check-equal? (migration-find-revision root "a") root)
-  (check-equal? (migration-find-revision root "d") head)
+  (check-false (migration-find-revision base "invalid"))
+  (check-equal? (migration-find-revision base "a") base)
+  (check-equal? (migration-find-revision base "d") head)
 
-  (check-true (migration-parent-of? root (migration-find-revision root "d")))
-  (check-true (migration-parent-of? (migration-find-revision root "c") (migration-find-revision root "d")))
-  (check-true (migration-parent-of? (migration-find-revision root "b") (migration-find-revision root "d")))
-  (check-false (migration-parent-of? (migration-find-revision root "d") root))
-
-  (check-equal?
-   (migration-plan root #f #f)
-   (list (migration-find-revision root "a")
-         (migration-find-revision root "b")
-         (migration-find-revision root "c")
-         (migration-find-revision root "d")))
+  (check-true (migration-parent-of? base (migration-find-revision base "d")))
+  (check-true (migration-parent-of? (migration-find-revision base "c") (migration-find-revision base "d")))
+  (check-true (migration-parent-of? (migration-find-revision base "b") (migration-find-revision base "d")))
+  (check-false (migration-parent-of? (migration-find-revision base "d") base))
 
   (check-equal?
-   (migration-plan root #f "b")
-   (list (migration-find-revision root "a")
-         (migration-find-revision root "b")))
+   (migration-plan base #f #f)
+   (list (migration-find-revision base "a")
+         (migration-find-revision base "b")
+         (migration-find-revision base "c")
+         (migration-find-revision base "d")))
 
   (check-equal?
-   (migration-plan root #f "c")
-   (list (migration-find-revision root "a")
-         (migration-find-revision root "b")
-         (migration-find-revision root "c")))
+   (migration-plan base #f "b")
+   (list (migration-find-revision base "a")
+         (migration-find-revision base "b")))
 
   (check-equal?
-   (migration-plan root "c" #f)
-   (list (migration-find-revision root "c")
-         (migration-find-revision root "b")
-         (migration-find-revision root "a")))
+   (migration-plan base #f "c")
+   (list (migration-find-revision base "a")
+         (migration-find-revision base "b")
+         (migration-find-revision base "c")))
 
   (check-equal?
-   (migration-plan root "b" #f)
-   (list (migration-find-revision root "b")
-         (migration-find-revision root "a")))
+   (migration-plan base "c" #f)
+   (list (migration-find-revision base "c")
+         (migration-find-revision base "b")
+         (migration-find-revision base "a")))
 
   (check-equal?
-   (migration-plan root "a" "c")
-   (list (migration-find-revision root "b")
-         (migration-find-revision root "c")))
+   (migration-plan base "b" #f)
+   (list (migration-find-revision base "b")
+         (migration-find-revision base "a")))
 
   (check-equal?
-   (migration-plan root "b" "d")
-   (list (migration-find-revision root "c")
-         (migration-find-revision root "d")))
+   (migration-plan base "a" "c")
+   (list (migration-find-revision base "b")
+         (migration-find-revision base "c")))
 
   (check-equal?
-   (migration-plan root "d" "a")
-   (list (migration-find-revision root "d")
-         (migration-find-revision root "c")
-         (migration-find-revision root "b")))
+   (migration-plan base "b" "d")
+   (list (migration-find-revision base "c")
+         (migration-find-revision base "d")))
 
   (check-equal?
-   (migration-plan root "d" "b")
-   (list (migration-find-revision root "d")
-         (migration-find-revision root "c"))))
+   (migration-plan base "d" "a")
+   (list (migration-find-revision base "d")
+         (migration-find-revision base "c")
+         (migration-find-revision base "b")))
+
+  (check-equal?
+   (migration-plan base "d" "b")
+   (list (migration-find-revision base "d")
+         (migration-find-revision base "c"))))
