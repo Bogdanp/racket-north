@@ -40,7 +40,7 @@ EOQ
      (with-handlers ([exn:fail:sql?
                       (lambda (e)
                         (raise (exn:fail:adapter:migration @~a{failed to apply revision '@revision'}
-                                                           (current-continuation-marks) e migration)))])
+                                                           (current-continuation-marks) e revision)))])
        (call-with-transaction conn
          (lambda ()
            (log-north-sqlite-adapter-debug "applying revision ~a" revision)

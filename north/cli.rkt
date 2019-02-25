@@ -89,10 +89,10 @@ EOT
   (exit 1))
 
 (define (exit-with-adapter-error! e)
-  (define migration (exn:fail:adapter:migration-migration e))
+  (define revision (exn:fail:adapter:migration-revision e))
   (define info (exn:fail:sql-info (exn:fail:adapter-cause e)))
   (apply exit-with-errors!
-         @~a{error: failed to apply revision @(migration-revision migration)}
+         @~a{error: failed to apply revision @revision}
          @~a{details:}
          (for/list ([i info])
            @~a{  @(car i): @(cdr i)})))
