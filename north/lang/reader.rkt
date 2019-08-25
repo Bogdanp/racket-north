@@ -12,6 +12,9 @@
 (define all-keywords
   (list "description" "revision" "parent" "up" "down"))
 
+(define current-keyword
+  (make-parameter "anonymous"))
+
 (define (migrations-read in)
   (syntax->datum (migrations-read-syntax #f in)))
 
@@ -64,7 +67,7 @@
     (call-with-output-string
      (lambda (out)
        (unless (regexp-match #px"\n--\\s*\\}" in 0 #f out)
-         (raise-read-error "unexpected end of file while reading block" src line col pos 0)))))
+         (raise-read-error (format "unexpected end of file while reading ~v block" (current-keyword)) src line col pos 0)))))
 
   (define (read-declaration)
     (expect #\-)
@@ -76,16 +79,17 @@
     (chomp-spaces)
 
     (define value
-      (cond
-        [(peek #\{)
-         (expect #\{)
-         (chomp-spaces)
-         (read-block)]
+      (parameterize ([current-keyword keyword])
+        (cond
+          [(peek #\{)
+           (expect #\{)
+           (chomp-spaces)
+           (read-block)]
 
-        [else
-         (expect #\:)
-         (chomp-spaces)
-         (read-string)]))
+          [else
+           (expect #\:)
+           (chomp-spaces)
+           (read-string)])))
 
     #`(cons '#,(string->symbol keyword) #,value))
 

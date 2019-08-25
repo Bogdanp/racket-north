@@ -102,6 +102,10 @@ EOT
                    (lambda (e)
                      (exit-with-errors! @~a{error: @(exn-message e)}))]
 
+                  [exn:fail:read?
+                   (lambda (e)
+                     (exit-with-errors! @~a{error: @(exn-message e)}))]
+
                   [exn:fail?
                    (lambda (e)
                      (exit-with-errors! @~a{error: '@(migrations-path)' folder not found}))])
