@@ -5,7 +5,7 @@ set -euo pipefail
 ROOT=$(dirname "$0")
 MIGRATIONS_FOLDER="$ROOT/migrations"
 FIXTURES_FOLDER="$ROOT/fixtures"
-EXPECTED_OUTPUT="$ROOT/expected-output"
+EXPECTED_OUTPUT="$FIXTURES_FOLDER/expected-output"
 export DATABASE_URL="sqlite:$ROOT/db.sqlite"
 
 log() {
