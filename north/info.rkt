@@ -6,7 +6,8 @@
 (define deps
   '("base"
     "db-lib"
-    "gregor-lib"))
+    "gregor-lib"
+    "parser-tools-lib"))
 
 (define build-deps
   '("at-exp-lib"

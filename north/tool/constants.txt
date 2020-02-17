@@ -1,0 +1,5 @@
+current_timestamp
+false
+now
+null
+true

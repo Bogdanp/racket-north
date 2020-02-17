@@ -1,0 +1,62 @@
+add
+and
+between
+bigserial
+boolean
+by
+check
+column
+constraint
+create
+date
+day
+default
+delete
+distinct
+double precision
+drop
+epoch
+escape
+extract
+for
+foreign key
+from
+group
+hour
+in
+insert
+integer
+interval
+into
+is
+join
+like
+limit
+minute
+month
+not
+numeric
+on
+or
+order
+placing
+primary key
+references
+replace
+second
+select
+serial
+similar to
+table
+text
+time
+timestamp
+timestamp with timezone
+timestamptz
+unique
+unknown
+update
+values
+view
+where
+year

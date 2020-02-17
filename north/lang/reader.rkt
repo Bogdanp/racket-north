@@ -6,6 +6,7 @@
          syntax/readerr)
 
 (provide
+ get-info
  (rename-out [migrations-read read]
              [migrations-read-syntax read-syntax]))
 
@@ -120,3 +121,10 @@
 
       (unless (hash-has-key? metadata 'up)
         (raise-syntax-error '#,module-name "@up missing"))))
+
+(define ((get-info in mod line col pos) key default)
+  (case key
+    [(drracket:default-filters) '(["north Migrations" ".sql"])]
+    [(drracket:default-extension) "sql"]
+    [(color-lexer) (dynamic-require 'north/tool/syntax-color 'read-token)]
+    [else default]))
