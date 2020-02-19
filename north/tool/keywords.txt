@@ -1,9 +1,11 @@
 add
+alter
 and
 between
 bigserial
 boolean
 by
+cascade
 check
 column
 constraint
@@ -13,6 +15,7 @@ day
 default
 delete
 distinct
+domain
 double precision
 drop
 epoch
