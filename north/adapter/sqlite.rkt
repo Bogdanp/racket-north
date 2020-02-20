@@ -4,9 +4,7 @@
          net/url
          racket/contract/base
          racket/format
-         racket/match
-         "base.rkt"
-         "../base.rkt")
+         "base.rkt")
 
 (provide
  (contract-out
@@ -20,15 +18,13 @@ create table if not exists north_schema_version(
 EOQ
 )
 
-(define-logger north-sqlite-adapter)
-
 (struct sqlite-adapter (conn)
   #:methods gen:adapter
   [(define (adapter-init ad)
      (define conn (sqlite-adapter-conn ad))
      (call-with-transaction conn
        (lambda ()
-         (log-north-sqlite-adapter-debug "creating schema table")
+         (log-north-adapter-debug "creating schema table")
          (query-exec conn CREATE-SCHEMA-TABLE))))
 
    (define (adapter-current-revision ad)
@@ -43,7 +39,7 @@ EOQ
                                                            (current-continuation-marks) e revision)))])
        (call-with-transaction conn
          (lambda ()
-           (log-north-sqlite-adapter-debug "applying revision ~a" revision)
+           (log-north-adapter-debug "applying revision ~a" revision)
            (and script (query-exec conn script))
 
            (query-exec conn "delete from north_schema_version")

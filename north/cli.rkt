@@ -10,10 +10,10 @@
          racket/match
          racket/port
          raco/command-name
-         "base.rkt"
          "adapter/base.rkt"
          "adapter/postgres.rkt"
-         "adapter/sqlite.rkt")
+         "adapter/sqlite.rkt"
+         "base.rkt")
 
 (define current-program-name
   (make-parameter (short-program+command-name)))

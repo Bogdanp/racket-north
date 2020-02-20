@@ -4,6 +4,8 @@
 
 (provide (all-defined-out))
 
+(define-logger north-adapter)
+
 (define-generics adapter
   (adapter-init adapter)
   (adapter-current-revision adapter)
