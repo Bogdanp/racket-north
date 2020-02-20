@@ -127,4 +127,5 @@
     [(drracket:default-filters) '(["north Migrations" ".sql"])]
     [(drracket:default-extension) "sql"]
     [(color-lexer) (dynamic-require 'north/tool/syntax-color 'read-token)]
+    [(module-language) 'racket/base]
     [else default]))
