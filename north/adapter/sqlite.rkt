@@ -46,10 +46,44 @@ EOQ
            (query-exec conn "insert into north_schema_version values ($1)" revision)))))])
 
 (define (url->sqlite-adapter url)
-  (define conn
-    (if (null? (url-path url))
-        (sqlite3-connect #:database 'memory)
-        (sqlite3-connect #:database (url->path url)
-                         #:mode 'create)))
+  (sqlite-adapter
+   (sqlite3-connect #:database (make-db-path url)
+                    #:mode 'create)))
 
-  (sqlite-adapter conn))
+(define (make-db-path url)
+  (define parts
+    (for*/list ([part (in-list (url-path url))]
+                [param (in-value (path/param-path part))])
+      (if (string=? param "")
+          "/"
+          param)))
+
+  (when (or (null? parts)
+            (equal? parts '("")))
+    (error 'url->sqlite-adapter "sqlite3 connection URL must contain a path"))
+
+  (when (and (url-host url)
+             (not (string=? (url-host url) "")))
+    (error 'url->sqlite-adapter "sqlite3 connection URL must either start with 0 or 3 slashes"))
+
+  (apply build-path parts))
+
+(module+ test
+  (require rackunit)
+
+  (define make
+    (compose1 path->string make-db-path string->url))
+
+  (for ([(s e) (in-hash (hash  "sqlite:db.sqlite3"       "db.sqlite3"
+                               "sqlite:///db.sqlite3"    "db.sqlite3"
+                               "sqlite:///a/db.sqlite3"  "a/db.sqlite3"
+                               "sqlite:////a/db.sqlite3" "/a/db.sqlite3"))])
+    (check-equal? (make s) e))
+
+  (for ([s (in-list (list "sqlite://"
+                          "sqlite://a/"
+                          "sqlite://a/db.sqlite3"))])
+    (check-exn
+     exn:fail?
+     (lambda ()
+       (make s)))))
