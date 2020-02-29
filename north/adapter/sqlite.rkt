@@ -53,10 +53,10 @@ EOQ
 (define (make-db-path url)
   (define parts
     (for*/list ([part (in-list (url-path url))]
-                [param (in-value (path/param-path part))])
-      (if (string=? param "")
-          "/"
-          param)))
+                [path (in-value (path/param-path part))])
+      (cond
+        [(string=? path "") "/"]
+        [else path])))
 
   (when (or (null? parts)
             (equal? parts '("")))
