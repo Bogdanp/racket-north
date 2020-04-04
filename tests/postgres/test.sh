@@ -5,7 +5,7 @@ set -euo pipefail
 ROOT=$(dirname "$0")
 MIGRATIONS_FOLDER="$ROOT/migrations"
 FIXTURES_FOLDER="$ROOT/fixtures"
-export DATABASE_URL="postgres://north_tests@127.0.0.1/north_tests"
+export DATABASE_URL="${PG_DATABASE_URL:-postgres://north_tests@127.0.0.1/north_tests}"
 
 log() {
     printf "[%s] [postgres] %s\\n" "$(date +%Y-%m-%dT%H:%M:%S)" "$@"
