@@ -29,11 +29,13 @@ compare() {
 
 log "Cleaning up."
 log "DATABASE_URL=$DATABASE_URL"
-echo "drop database north_tests" | psql -dpostgres || true
-echo "drop role north_tests" | psql -dpostgres || true
-echo "create role north_tests with password 'north_tests' login" | psql -dpostgres
-echo "create database north_tests" | psql -dpostgres
-echo "grant all privileges on database north_tests to north_tests" | psql -dpostgres
+if [ -z "${CI+x}" ]; then
+    echo "drop database north_tests" | psql -dpostgres || true
+    echo "drop role north_tests" | psql -dpostgres || true
+    echo "create role north_tests with password 'north_tests' login" | psql -dpostgres
+    echo "create database north_tests" | psql -dpostgres
+    echo "grant all privileges on database north_tests to north_tests" | psql -dpostgres
+fi
 rm -fr "$MIGRATIONS_FOLDER"
 mkdir -p "$MIGRATIONS_FOLDER"
 
