@@ -1,4 +1,4 @@
-# racket-north ![CI](https://github.com/Bogdanp/racket-north/workflows/CI/badge.svg)
+# racket-north [![CI](https://github.com/Bogdanp/racket-north/workflows/CI/badge.svg)](https://github.com/Bogdanp/racket-north/actions?query=workflow%3ACI)
 
 A database migration tool written in Racket.
 
