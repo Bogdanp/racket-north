@@ -28,6 +28,7 @@ compare() {
 }
 
 log "Cleaning up."
+log "DATABASE_URL=$DATABASE_URL"
 echo "drop database north_tests" | psql -dpostgres || true
 echo "drop role north_tests" | psql -dpostgres || true
 echo "create role north_tests with password 'north_tests' login" | psql -dpostgres

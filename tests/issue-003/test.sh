@@ -29,6 +29,7 @@ compare() {
 }
 
 log "Cleaning up."
+log "DATABASE_URL=$DATABASE_URL"
 rm -f "$ROOT/db.sqlite"
 rm -fr "$MIGRATIONS_FOLDER"
 mkdir -p "$MIGRATIONS_FOLDER"
