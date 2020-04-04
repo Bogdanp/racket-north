@@ -1,5 +1,7 @@
 # racket-north
 
+![CI](https://github.com/Bogdanp/racket-north/workflows/CI/badge.svg)
+
 A database migration tool written in Racket.
 
 ## Documentation
