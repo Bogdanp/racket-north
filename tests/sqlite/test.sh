@@ -11,6 +11,10 @@ log() {
     printf "[%s] [sqlite] %s\\n" "$(date +%Y-%m-%dT%H:%M:%S)" "$@"
 }
 
+scrubbed() {
+    echo "$1" | sed -E "s|$(realpath "$ROOT")||g"
+}
+
 compare() {
     FIXTURE=$1
     shift
@@ -19,9 +23,9 @@ compare() {
     log "Comparing '$*' to fixture $FIXTURE."
     OUTPUT=$("$@")
     if [ ! -f "$FIXTURES_FOLDER/$FIXTURE" ]; then
-        echo "$OUTPUT" > "$FIXTURES_FOLDER/$FIXTURE"
+        scrubbed "$OUTPUT" > "$FIXTURES_FOLDER/$FIXTURE"
     else
-        if ! echo "$OUTPUT" | diff - "$FIXTURES_FOLDER/$FIXTURE"; then
+        if ! scrubbed "$OUTPUT" | diff - "$FIXTURES_FOLDER/$FIXTURE"; then
             exit 1
         fi
     fi

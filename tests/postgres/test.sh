@@ -2,13 +2,17 @@
 
 set -euo pipefail
 
-ROOT=$(dirname "$0")
+ROOT=$(realpath "$(dirname "$0")")
 MIGRATIONS_FOLDER="$ROOT/migrations"
 FIXTURES_FOLDER="$ROOT/fixtures"
 export DATABASE_URL="${PG_DATABASE_URL:-postgres://north_tests@127.0.0.1/north_tests}"
 
 log() {
     printf "[%s] [postgres] %s\\n" "$(date +%Y-%m-%dT%H:%M:%S)" "$@"
+}
+
+scrubbed() {
+    echo "$1" | sed -E "s|$ROOT||g"
 }
 
 compare() {
@@ -19,9 +23,9 @@ compare() {
     log "Comparing '$*' to fixture $FIXTURE."
     OUTPUT=$("$@")
     if [ ! -f "$FIXTURES_FOLDER/$FIXTURE" ]; then
-        echo "$OUTPUT" > "$FIXTURES_FOLDER/$FIXTURE"
+        scrubbed "$OUTPUT" > "$FIXTURES_FOLDER/$FIXTURE"
     else
-        if ! echo "$OUTPUT" | diff - "$FIXTURES_FOLDER/$FIXTURE"; then
+        if ! scrubbed "$OUTPUT" | diff - "$FIXTURES_FOLDER/$FIXTURE"; then
             exit 1
         fi
     fi

@@ -5,19 +5,19 @@
 -- Rolling back revision: fe716365ac516d89fa2811e5e1f1d60e
 -- Revision: fe716365ac516d89fa2811e5e1f1d60e
 -- Parent: d4de4db8881177a07a1c8ede7f91c56f
--- Path: /Users/bogdan/sandbox/racket-north/tests/postgres/migrations/20190127-add-created-at-column.sql
+-- Path: /migrations/20190127-add-created-at-column.sql
 alter table users drop column created_at;
 
 -- Rolling back revision: d4de4db8881177a07a1c8ede7f91c56f
 -- Revision: d4de4db8881177a07a1c8ede7f91c56f
 -- Parent: 554a960cad8fe24fa6b4d4da845b026d
--- Path: /Users/bogdan/sandbox/racket-north/tests/postgres/migrations/20190127-add-updated-at-column.sql
+-- Path: /migrations/20190127-add-updated-at-column.sql
 alter table users drop column updated_at;
 
 -- Rolling back revision: 554a960cad8fe24fa6b4d4da845b026d
 -- Revision: 554a960cad8fe24fa6b4d4da845b026d
 -- Parent: base
--- Path: /Users/bogdan/sandbox/racket-north/tests/postgres/migrations/20190127-add-users-table.sql
+-- Path: /migrations/20190127-add-users-table.sql
 drop table users;
 
 -- Rolling back revision: base
