@@ -11,7 +11,7 @@
              [migrations-read-syntax read-syntax]))
 
 (define all-keywords
-  (list "description" "revision" "parent" "up" "down"))
+  (list "description" "revision" "parent" "engine" "up" "down"))
 
 (define (migrations-read in)
   (syntax->datum (migrations-read-syntax #f in)))
