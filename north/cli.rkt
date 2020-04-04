@@ -184,7 +184,7 @@ EOT
   (print-message @~a{Current revision: @(or current-revision "base")})
   (print-message @~a{Target revision: @target-revision})
   (when (equal? current-revision target-revision)
-    (exit-with-errors! "error: nothing to do"))
+    (exit 0))
 
   (define plan
     (migration-plan base current-revision target-revision))
