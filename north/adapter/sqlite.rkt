@@ -47,14 +47,16 @@ EOQ
 
 (define (url->sqlite-adapter url)
   (sqlite-adapter
-   (sqlite3-connect #:database (make-db-path url)
-                    #:mode 'create)))
+   (sqlite3-connect
+    #:database (make-db-path url)
+    #:mode 'create)))
 
 (define (make-db-path url)
   (define parts
     (for*/list ([part (in-list (url-path url))]
                 [path (in-value (path/param-path part))])
       (cond
+        [(symbol? path) path]
         [(string=? path "") "/"]
         [else path])))
 
