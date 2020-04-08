@@ -119,13 +119,25 @@
 
     [(list r1 r2)
      (define m1 (migration-find-revision node r1))
+     (unless m1
+       (raise-not-found 'migration-plan r1))
+
      (define m2 (migration-find-revision node r2))
+     (unless m2
+       (raise-not-found 'migration-plan r2))
+
      (cond
        [(migration-parent-of? m1 m2)
         (cdr (migration->list m1 #:stop-at r2))]
 
        [(migration-parent-of? m2 m1)
-        (reverse (cdr (migration->list m2 #:stop-at r1)))])]))
+        (reverse (cdr (migration->list m2 #:stop-at r1)))]
+
+       [else
+        (error 'migration-plan "could not determine relationship between revision ~a and revision ~a" r1 r2)])]))
+
+(define (raise-not-found who revision)
+  (error who "could not find revision ~a among the migrations~n  hint: you may be trying to migrate the wrong database" revision))
 
 (module+ test
   (require rackunit)
