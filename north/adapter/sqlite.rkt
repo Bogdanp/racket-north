@@ -12,8 +12,8 @@
   [url->sqlite-adapter (-> url? adapter?)]))
 
 (define CREATE-SCHEMA-TABLE #<<EOQ
-create table if not exists north_schema_version(
-  current_revision text not null
+CREATE TABLE IF NOT EXISTS north_schema_version(
+  current_revision TEXT NOT NULL
 );
 EOQ
 )
@@ -29,9 +29,9 @@ EOQ
 
    (define (adapter-current-revision ad)
      (define conn (sqlite-adapter-conn ad))
-     (query-maybe-value conn "select current_revision from north_schema_version"))
+     (query-maybe-value conn "SELECT current_revision FROM north_schema_version"))
 
-   (define (adapter-apply! ad revision script)
+   (define (adapter-apply! ad revision scripts)
      (define conn (sqlite-adapter-conn ad))
      (with-handlers ([exn:fail:sql?
                       (lambda (e)
@@ -40,10 +40,11 @@ EOQ
        (call-with-transaction conn
          (lambda ()
            (log-north-adapter-debug "applying revision ~a" revision)
-           (and script (query-exec conn script))
+           (for ([script (in-list scripts)])
+             (query-exec conn script))
 
-           (query-exec conn "delete from north_schema_version")
-           (query-exec conn "insert into north_schema_version values ($1)" revision)))))])
+           (query-exec conn "DELETE FROM north_schema_version")
+           (query-exec conn "INSERT INTO north_schema_version VALUES ($1)" revision)))))])
 
 (define (url->sqlite-adapter url)
   (sqlite-adapter

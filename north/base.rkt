@@ -1,7 +1,8 @@
 #lang racket/base
 
 (require (for-syntax racket/base
-                     racket/format)
+                     racket/syntax
+                     syntax/parse)
          racket/contract/base
          racket/file
          racket/function
@@ -32,24 +33,23 @@
 (struct migration (metadata child) #:transparent)
 (struct exn:fail:migration exn:fail ())
 
-(define-syntax (make-accessor stx)
-  (syntax-case stx ()
-    [(make-accessor name)
-     (with-syntax ([accessor-name (datum->syntax stx (string->symbol (~a "migration-" (syntax->datum #'name))))])
-       #'(begin
-           (define (accessor-name migration)
-             (hash-ref (migration-metadata migration) 'name #f))
+(define-syntax (define-accessor stx)
+  (syntax-parse stx
+    [(_ id:id (~optional c-expr:expr))
+     #:with accessor-id (format-id #'id "migration-~a" (syntax-e #'id))
+     #'(begin
+         (define (accessor-id migration)
+           (hash-ref (migration-metadata migration) 'id #f))
 
-           (provide
-            (contract-out [accessor-name (-> migration? (or/c false/c string?))]))))]))
+         (provide
+          (contract-out [accessor-id (-> migration? (or/c false/c (~? c-expr string?)))])))]))
 
-(make-accessor name)
-(make-accessor revision)
-(make-accessor parent)
-(make-accessor path)
-(make-accessor description)
-(make-accessor up)
-(make-accessor down)
+(define-syntax-rule (define-accessors id ...)
+  (begin (define-accessor id) ...))
+
+(define-accessors name revision parent path description)
+(define-accessor up (listof string?))
+(define-accessor down (listof string?))
 
 (define (path->migration path)
   (define metadata-by-parent
@@ -73,7 +73,7 @@
 
   ;; Base is added in to make operations such as rolling back all the way easier.
   (define root (hash-ref metadata-by-parent #f #f))
-  (and root (migration (hasheq 'revision "base" 'parent "base")
+  (and root (migration (hasheq 'revision "base" 'parent "base" 'up null 'down null)
                        (make-migration (hash-set root 'parent "base")))))
 
 (define (migration->list node #:stop-at [stop-at #f])
@@ -146,25 +146,25 @@
     (migration (hasheq 'revision "d"
                        'parent "c"
                        'name "20190128-alter-users-add-last-login.sql"
-                       'up "d up"
-                       'down "d down") #f))
+                       'up '("d up")
+                       'down '("d down")) #f))
 
   (define base
     (migration (hasheq 'revision "a"
                        'parent #f
                        'name "20190126-create-users-table.sql"
-                       'up "a up"
-                       'down "a down")
+                       'up '("a up")
+                       'down '("a down"))
                (migration (hasheq 'revision "b"
                                   'parent "a"
                                   'name "20190127-alter-users-add-created-at.sql"
-                                  'up "b up"
-                                  'down "b down")
+                                  'up '("b up")
+                                  'down '("b down"))
                           (migration (hasheq 'revision "c"
                                              'parent "b"
                                              'name "20190127-alter-users-add-updated-at.sql"
-                                             'up "c up"
-                                             'down "c down") head))))
+                                             'up '("c up")
+                                             'down '("c down")) head))))
 
   (check-equal?
    (migration-most-recent base)

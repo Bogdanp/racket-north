@@ -150,10 +150,13 @@ EOT
 
 (define (print-dry-run migration script-proc)
   (unless (string=? (migration-revision migration) "base")
+    (define scripts (script-proc migration))
     (print-message @~a{Revision: @(migration-revision migration)})
     (print-message @~a{Parent: @(migration-parent migration)})
     (print-message @~a{Path: @(migration-path migration)})
-    (displayln (or (script-proc migration) "-- no content --"))))
+    (cond
+      [(null? scripts) (displayln "-- no content --")]
+      [else (for-each displayln scripts)])))
 
 (define (print-migration migration)
   (unless (string=? (migration-revision migration) "base")
