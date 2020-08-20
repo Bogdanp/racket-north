@@ -27,12 +27,10 @@
   (define (expect c)
     (define-values (line col pos) (port-next-location in))
     (define current-char (read-char in))
-    (cond
-      [(eof-object? current-char)
-       (raise-read-error (format "unexpected end of file, expected '~a'" c) src line col pos 0)]
-
-      [(not (char=? current-char c))
-       (raise-read-error (format "expected '~a' but found '~a'" c current-char) src line col pos 1)]))
+    (when (eof-object? current-char)
+      (raise-read-error (format "unexpected end of file, expected '~a'" c) src line col pos 0))
+    (unless (char=? current-char c)
+      (raise-read-error (format "expected '~a' but found '~a'" c current-char) src line col pos 1)))
 
   (define (read-keyword)
     (define-values (line col pos) (port-next-location in))
@@ -111,10 +109,28 @@
   #`(module #,module-name racket/base
       (provide metadata)
 
+      (define pairs
+        (list (cons 'name #,(symbol->string module-name))
+              (cons 'path #,(path->string src))
+              #,@declarations))
+
       (define metadata
-        (make-immutable-hasheq (list (cons 'name #,(symbol->string module-name))
-                                     (cons 'path #,(path->string src))
-                                     #,@declarations)))
+        (for/fold ([metadata (hasheq)]
+                   #:result (hash-update
+                             (hash-update metadata 'up reverse null)
+                             'down reverse null))
+                  ([p (in-list pairs)])
+          (define k (car p))
+          (define v (cdr p))
+          (case k
+            [(up down)
+             (hash-update metadata k
+                          (lambda (vs)
+                            (cons v vs))
+                          null)]
+
+            [else
+             (hash-set metadata k v)])))
 
       (unless (hash-has-key? metadata 'revision)
         (raise-syntax-error '#,module-name "@revision missing"))
@@ -122,7 +138,7 @@
       (unless (hash-has-key? metadata 'up)
         (raise-syntax-error '#,module-name "@up missing"))))
 
-(define ((get-info in mod line col pos) key default)
+(define ((get-info _in _mod _line _col _pos) key default)
   (case key
     [(drracket:default-filters) '(["north Migrations" ".sql"])]
     [(drracket:default-extension) "sql"]
