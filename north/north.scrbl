@@ -73,7 +73,7 @@ folder with the suffix @exec{-add-users-table}.  Open it up in your
 favorite text editor and you should see something along these
 lines:
 
-@verbatim|{
+@codeblock|{
 #lang north
 
 -- @revision: 2f00470a20a53ff3f3b12b79a005070e
@@ -112,7 +112,8 @@ a migration.  @exec{down} scripts are optional.
 Let's change the @exec{up} script so it creates a new table named
 @exec{users}:
 
-@verbatim|{
+@codeblock[#:keep-lang-line? #f]|{
+#lang north
 -- @up {
 create table users(
   id serial primary key,
@@ -126,7 +127,8 @@ create table users(
 
 And the @exec{down} script so it drops the table:
 
-@verbatim|{
+@codeblock[#:keep-lang-line? #f]|{
+#lang north
 -- @down {
 drop table users;
 -- }
@@ -197,7 +199,7 @@ Next, let's add a @exec{last-login} column to the @exec{users} table:
 
 The new migration should contain content that looks like this:
 
-@verbatim|{
+@codeblock|{
 #lang north
 
 -- @revision: 91dc39c84aa496e5e0fda2d5a947eea3
@@ -218,7 +220,8 @@ migration follows the first one (its parent).
 
 Let's update its @exec{up} script:
 
-@verbatim|{
+@codeblock[#:keep-lang-line? #f]|{
+#lang north
 -- @up {
 alter table users add column last_login timestamp;
 -- }

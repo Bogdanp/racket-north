@@ -103,15 +103,22 @@
         (loop declarations)])))
 
   (define module-name
-    (string->symbol
-     (path->string (path-replace-extension (file-name-from-path src) ""))))
+    (cond
+      [(path-string? src)
+       (string->symbol
+        (path->string (path-replace-extension (file-name-from-path src) "")))]
+      [else
+       (string->symbol
+        (~a src))]))
 
   #`(module #,module-name racket/base
       (provide metadata)
 
       (define pairs
         (list (cons 'name #,(symbol->string module-name))
-              (cons 'path #,(path->string src))
+              (cons 'path #,(if (path-string? src)
+                                (path->string src)
+                                (~a src)))
               #,@declarations))
 
       (define metadata
