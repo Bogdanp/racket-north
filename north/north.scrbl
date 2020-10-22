@@ -4,7 +4,7 @@
 
 @title{@exec{north}: Database Migrations}
 @author[(author+email "Bogdan Popa" "bogdan@defn.io")]
-
+@defmodule[north]
 
 @;; Introduction ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
