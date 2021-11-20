@@ -71,7 +71,7 @@ EOQ
 
   (postgres-adapter
    (postgresql-connect #:database database
-                       #:server (url-host url)
+                       #:server host
                        #:port (url-port url)
                        #:user username
                        #:password password)))
