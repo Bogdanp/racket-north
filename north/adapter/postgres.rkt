@@ -50,7 +50,16 @@ EOQ
            (query-exec conn "INSERT INTO north_schema_version VALUES ($1)" revision)))))])
 
 (define (url->postgres-adapter url)
-  (define database (substring (path->string (url->path url)) 1))
+  (define (oops message)
+    (error 'url->postgres-adapter (format "~a~n connection URLs must have the form:~n  postgres://[username[:password]@]hostname[:port]/database_name" message)))
+  (define host (url-host url))
+  (when (string=? host "")
+    (oops "host missing"))
+  (define path (url-path url))
+  (when (null? path)
+    (oops "database_name missing"))
+  (define database
+    (path/param-path (car (url-path url))))
   (match-define (list _ username password)
     (regexp-match #px"([^:]+)(?::(.+))?" (or (url-user url) "root")))
 
