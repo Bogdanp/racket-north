@@ -1,6 +1,6 @@
 #lang info
 
-(define version "0.4.0")
+(define version "0.5")
 (define collection "north")
 
 (define deps
