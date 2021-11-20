@@ -304,4 +304,10 @@ EOT
 
 (parameterize ([current-command-line-arguments (list->vector args)]
                [current-program-name (~a (current-program-name) " " command)])
-  (handler))
+  (with-handlers ([(λ (e)
+                     (or (exn:fail:adapter? e)
+                         (exn:fail:sql? e)))
+                   (λ (e)
+                     (eprintf "error: ~a~n" (exn-message e))
+                     (exit 1))])
+    (handler)))

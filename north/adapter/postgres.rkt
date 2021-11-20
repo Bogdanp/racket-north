@@ -51,7 +51,13 @@ EOQ
 
 (define (url->postgres-adapter url)
   (define (oops message)
-    (error 'url->postgres-adapter (format "~a~n connection URLs must have the form:~n  postgres://[username[:password]@]hostname[:port]/database_name" message)))
+    (raise
+     (exn:fail:adapter
+      (~a message
+          "\n connection URLs must have the form:"
+          "\n  postgres://[username[:password]@]hostname[:port]/database_name")
+      (current-continuation-marks)
+      #f)))
   (define host (url-host url))
   (when (string=? host "")
     (oops "host missing"))
