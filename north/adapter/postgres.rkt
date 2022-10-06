@@ -74,4 +74,5 @@ EOQ
                        #:server host
                        #:port (url-port url)
                        #:user username
-                       #:password password)))
+                       #:password password
+                       #:ssl 'optional)))
