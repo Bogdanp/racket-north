@@ -55,7 +55,7 @@ EOQ
      (exn:fail:adapter
       (~a message
           "\n connection URLs must have the form:"
-          "\n  postgres://[username[:password]@]hostname[:port]/database_name")
+          "\n  postgres://[username[:password]@]hostname[:port]/database_name[?sslmode=prefer|require|disable]")
       (current-continuation-marks)
       #f)))
   (define host (url-host url))
@@ -68,11 +68,19 @@ EOQ
     (path/param-path (car (url-path url))))
   (match-define (list _ username password)
     (regexp-match #px"([^:]+)(?::(.+))?" (or (url-user url) "root")))
+  (define sslmode
+    (match (assq 'sslmode (url-query url))
+      [#f 'no]
+      ['(sslmode . "disable") 'no]
+      ['(sslmode . "require") 'yes]
+      ['(sslmode . "prefer") 'optional]
+      [`(sslmode . #f) (oops "empty `sslmode'")]
+      [`(sslmode . ,value) (oops (format "invalid `sslmode' value: ~e" value))]))
 
   (postgres-adapter
    (postgresql-connect #:database database
                        #:server host
                        #:port (url-port url)
+                       #:ssl sslmode
                        #:user username
-                       #:password password
-                       #:ssl 'optional)))
+                       #:password password)))

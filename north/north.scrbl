@@ -51,7 +51,7 @@ This tells @exec{north} to execute operations against an SQLite
 database located in the current directory called @filepath{db.sqlite}.
 @exec{DATABASE_URL} must have the following format:
 
-@verbatim|{protocol://[username[:password]@]hostname[:port]/database_name}|
+@verbatim|{protocol://[username[:password]@]hostname[:port]/database_name[?sslmode=prefer|require|disable]}|
 
 Assuming you wanted to use PostgreSQL instead of SQLite, your URL
 would look something like this:
