@@ -6,11 +6,11 @@ jobs:
 
     services:
       postgres:
-        image: postgres:12.2
+        image: postgres:14
         env:
-          POSTGRES_USER: north_tests
-          POSTGRES_PASSWORD: north_tests
-          POSTGRES_DB: north_tests
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
         ports:
           - 5432/tcp
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
@@ -31,4 +31,5 @@ jobs:
       run: ./run-all-tests.sh
       working-directory: tests
       env:
-        PG_DATABASE_URL: postgres://north_tests:north_tests@127.0.0.1:${{ job.services.postgres.ports[5432] }}/north_tests
+        PG_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:${{ job.services.postgres.ports[5432] }}/postgres
+        DATABASE_URL: postgres://north_tests:north_tests@127.0.0.1:${{ job.services.postgres.ports[5432] }}/north_tests

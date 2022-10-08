@@ -5,7 +5,8 @@ set -euo pipefail
 ROOT=$(realpath "$(dirname "$0")")
 MIGRATIONS_FOLDER="$ROOT/migrations"
 FIXTURES_FOLDER="$ROOT/fixtures"
-export DATABASE_URL="${PG_DATABASE_URL:-postgres://north_tests@127.0.0.1/north_tests}"
+export DATABASE_URL="${DATABASE_URL:-postgres://north_tests@127.0.0.1/north_tests}"
+export PG_DATABASE_URL="${PG_DATABASE_URL:-postgres://postgres@127.0.0.1/postgres}"
 
 log() {
     printf "[%s] [postgres] %s\\n" "$(date +%Y-%m-%dT%H:%M:%S)" "$@"
@@ -33,15 +34,13 @@ compare() {
 
 log "Cleaning up."
 log "DATABASE_URL=$DATABASE_URL"
-if [ -z "${CI+x}" ]; then
-    psql -dpostgres <<EOF
+psql "$PG_DATABASE_URL" <<EOF
 DROP DATABASE IF EXISTS north_tests;
 DROP ROLE IF EXISTS north_tests;
 CREATE ROLE north_tests WITH PASSWORD 'north_tests' LOGIN;
 CREATE DATABASE north_tests;
 GRANT ALL PRIVILEGES ON DATABASE north_tests TO north_tests;
 EOF
-fi
 rm -fr "$MIGRATIONS_FOLDER"
 mkdir -p "$MIGRATIONS_FOLDER"
 
