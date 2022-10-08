@@ -2,7 +2,7 @@
 
 @(require (for-label north racket/base))
 
-@title{@exec{north}: Database Migrations}
+@title{@tt{north}: Database Migrations}
 @author[(author+email "Bogdan Popa" "bogdan@defn.io")]
 @defmodule[north]
 
@@ -10,10 +10,9 @@
 
 @section[#:tag "intro"]{Introduction}
 
-@(define racket-uri "https://racket-lang.org")
+@(define racket-link (link "https://racket-lang.org" "Racket"))
 
-@exec{north} is a database migration tool written in @link[racket-uri]{Racket}.
-It helps you keep your database schema in sync across all your environments.
+@tt{north} is a database migration tool written in @|racket-link|.
 
 @subsection{Features}
 
@@ -22,8 +21,15 @@ It helps you keep your database schema in sync across all your environments.
   @item{SQL-based DSL for writing schema migrations.}
   @item{PostgreSQL and SQLite support.}
   @item{Migrations are each run inside individual transactions.}
-  @item{Migrations have a strict ordering based on revision ids.  Individual migration files can have arbitrary names.}
-  @item{All operations perform dry runs by default, resulting in executable SQL that you can send to your DBA for approval.}
+  @item{
+    Migrations have a strict ordering based on revision ids.
+    Individual migration files can have arbitrary names, which can be
+    changed at any point.
+  }
+  @item{
+    All operations perform dry runs by default, resulting in
+    executable SQL that you can send to your DBA for approval.
+  }
 ]
 
 
@@ -32,7 +38,7 @@ It helps you keep your database schema in sync across all your environments.
 @section[#:tag "install"]{Installation}
 
 Assuming you've already installed Racket, run the following command to
-install @exec{north}.
+install @tt{north}.
 
 @commandline{$ raco pkg install north}
 
@@ -42,36 +48,37 @@ install @exec{north}.
 @section[#:tag "tutorial"]{Tutorial}
 
 For the purposes of this tutorial, we're going to export a
-@exec{DATABASE_URL} environment variable to be used with each of the
-following commands.
+@tt{DATABASE_URL} environment variable that will be implictly used by
+each of the commands that follow:
 
 @commandline{$ export DATABASE_URL=sqlite:db.sqlite}
 
-This tells @exec{north} to execute operations against an SQLite
-database located in the current directory called @filepath{db.sqlite}.
-@exec{DATABASE_URL} must have the following format:
+This tells @tt{north} to execute operations against an SQLite database
+located in the current working directory called "db.sqlite".  To use
+PostgreSQL instead of SQLite, you can provide a @tech{database URL}
+that looks like this instead:
 
-@verbatim|{protocol://[username[:password]@]hostname[:port]/database_name[?sslmode=prefer|require|disable]}|
+@verbatim["postgres://example@127.0.0.1/example"]
 
-Assuming you wanted to use PostgreSQL instead of SQLite, your URL
-would look something like this:
-
-@verbatim|{postgres://example@127.0.0.1/example}|
-
-By default, @exec{north} looks for migrations inside the @filepath{migrations}
-folder in the current directory so you have to create that folder
-before moving on.
+By default, @tt{north} looks for migrations inside a folder called
+"migrations" in the current working directory, so you have to create
+that folder before moving on:
 
 @commandline{$ mkdir migrations}
 
-Now, let's try creating our first migration:
+Let's try creating our first migration:
 
 @commandline{$ raco north create add-users-table}
 
-That should create a new SQL file inside your @filepath{migrations}
-folder with the suffix @exec{-add-users-table}.  Open it up in your
-favorite text editor and you should see something along these
+Running the above command will create a new SQL file inside your
+"migrations" folder with the suffix @tt{-add-users-table}.  Open it up
+in your favorite text editor and you should see something along these
 lines:
+
+@margin-note{
+  The @tt{revision} number in your migration will be different to
+  what's shown here.
+}
 
 @codeblock|{
 #lang north
@@ -87,30 +94,29 @@ drop table example;
 -- }
 }|
 
-The @hash-lang[] @exec{north} line declares that this is a @exec{north}-style
+The @hash-lang[] @tt{north} line declares that this is a @tt{north}
 migration.  These types of files are made up of definitions where each
-definition is a line starting with @exec{--} followed by an @exec["@"]
+definition is a line starting with @exec["--"] followed by an @tt["@"]
 sign and the name of the binding being defined followed by either a
 colon or an open bracket.  If the name is followed by a colon then
 everything after that colon until the end of the line represents the
-string value of that binding.  If the name is followed by a bracket,
-then everything between the start of the next line and the next
-occurrence of @exec["-- }"] represents the string value of that
+string value of that binding.  If the name is followed by an open
+bracket, then everything between the start of the next line and the
+next occurrence of @exec["-- }"] represents the string value of that
 binding.
 
 The reason this syntax was chosen is because it is compatible with
-standard SQL syntax.  Each @exec{--} line in SQL is just a comment.
+standard SQL syntax.  Each @exec["--"] line is just a comment in SQL.
 This makes it easy to use whatever text editor you prefer to edit
 these files since most editors come with some sort of a SQL mode.
 
-This particular migration has a @exec{revision} id of
-@racket{2f00470a20a53ff3f3b12b79a005070e}, a @exec{description} and
-@exec{up} and @exec{down} scripts.  @exec{up} scripts are run when
-applying a migration and @exec{down} scripts are run when rolling back
-a migration.  @exec{down} scripts are optional.
+This particular migration has a @tt{revision} id of
+@racket{2f00470a20a53ff3f3b12b79a005070e}, a @tt{description} and
+@tt{up} and @tt{down} scripts.  The @tt{up} scripts are run when
+applying a migration and the @tt{down} scripts are run when rolling
+back a migration.  The @tt{down} scripts are optional.
 
-Let's change the @exec{up} script so it creates a new table named
-@exec{users}:
+Change the @tt{up} script so it creates a new table named @tt{users}:
 
 @codeblock[#:keep-lang-line? #f]|{
 #lang north
@@ -125,7 +131,7 @@ create table users(
 -- }
 }|
 
-And the @exec{down} script so it drops the table:
+And the @tt{down} script so it drops the table:
 
 @codeblock[#:keep-lang-line? #f]|{
 #lang north
@@ -134,8 +140,8 @@ drop table users;
 -- }
 }|
 
-If we tell @exec{north} to migrate the database now, it'll spit out a
-dry run of the pending migrations:
+If we tell @tt{north} to migrate the database now, it'll display the
+pending migrations, but will not modify the database:
 
 @commandline{$ raco north migrate}
 
@@ -161,8 +167,8 @@ create table users(
 }|
 
 As noted, this output represents a dry run.  The database was not
-actually modified.  Unless we explicitly pass the @exec{-f} flag to
-the @exec{migrate} command, none of the pending changes will be
+actually modified.  Unless we explicitly pass the @tt{-f} flag to the
+@exec{raco north migrate} command, none of the pending changes will be
 applied.
 
 Let's force it to migrate the DB:
@@ -193,11 +199,16 @@ CREATE TABLE users(
 );
 }|
 
-Next, let's add a @exec{last-login} column to the @exec{users} table:
+Next, add a @tt{last-login} column to the @tt{users} table:
 
 @commandline{$ raco north create add-last-login-column}
 
 The new migration should contain content that looks like this:
+
+@margin-note{
+  The @tt{revision} and @tt{parent} numbers in your migration will be
+  different to what's shown here.
+}
 
 @codeblock|{
 #lang north
@@ -215,10 +226,10 @@ alter table example drop column created_at;
 }|
 
 Not much different from the first migration, but note the introduction
-of the @exec{parent} binding.  This tells @exec{north} that this
-migration follows the first one (its parent).
+of the @tt{parent} binding.  This tells @tt{north} that this
+migration follows the previous one (its parent).
 
-Let's update its @exec{up} script:
+Alter its @tt{up} script:
 
 @codeblock[#:keep-lang-line? #f]|{
 #lang north
@@ -227,10 +238,10 @@ alter table users add column last_login timestamp;
 -- }
 }|
 
-And remove its @exec{down} script since SQLite does not support
+And remove its @tt{down} script since SQLite does not support
 dropping columns.
 
-If we call @exec{migrate} now, we'll get the following output:
+If we call @tt{migrate} now, we'll get the following output:
 
 @verbatim|{
 -- Current revision: 2f00470a20a53ff3f3b12b79a005070e
@@ -249,11 +260,11 @@ Apply that migration:
 
 @margin-note{
   Never roll back a production database.  It will almost always result
-  in some kind of data loss.  This command is intended for local
-  development only.
+  in some kind of data loss.  This command is intended for testing &
+  local development only.
 }
 
-If we wanted to roll back the last migration we could run:
+To roll back the last migration we can run:
 
 @commandline{$ raco north rollback}
 
@@ -270,8 +281,8 @@ If we wanted to roll back the last migration we could run:
 }|
 
 Of course, there's not much point in doing that since our last
-revision doesn't contain a @exec{down} script.  We can tell
-@exec{rollback} which revision it should roll back to and we can even
+revision doesn't contain a @tt{down} script.  We can tell
+@tt{rollback} which revision it should roll back to and we can even
 tell it to roll back all the way back to before the first revision:
 
 @commandline{$ raco north rollback base}
@@ -314,6 +325,31 @@ Rolling back revision: base
 }|
 
 And that's pretty much it.  There are a couple other commands, but you
-can find out about them by running
+can find out about them by running:
 
 @commandline{$ raco north help}
+
+
+@;; Reference ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+@section[#:tag "reference"]{Reference}
+@subsection{Database URLs}
+
+@deftech{Database URLs}, whether provided via the @tt{DATABASE_URL}
+environment variable or the @tt{-u} flags to the @exec{raco north
+migrate} and @exec{raco north rollback} commands, must follow this
+format:
+
+@verbatim|{protocol://[username[:password]@]hostname[:port]/database_name[?sslmode=prefer|require|disable]}|
+
+The @tt{protocol} must be either @tt{sqlite} or @tt{postgres}.
+
+The @tt{sslmode} parameter only applies to PostgreSQL connections.
+When not provided, the default is @tt{disable}.  Its values have the
+following meanings:
+
+@itemlist[
+  @item{@tt{prefer} -- try TLS and fall back to plain text if it's not available,}
+  @item{@tt{require} -- fail if a TLS connection cannot be established,}
+  @item{@tt{disable} -- don't attempt to use TLS.}
+]
