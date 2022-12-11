@@ -19,13 +19,13 @@ jobs:
     - name: Checkout
       uses: actions/checkout@master
 
-    - name: Install libssl-dev
-      run: sudo apt update && sudo apt install libssl-dev
-
     - name: Install Racket
       uses: Bogdanp/setup-racket@v1.9
       with:
         version: "8.7"
+
+    - name: TEMP: Install patched version of sasl-lib
+      run: sudo raco pkg install git://github.com/Bogdanp/sasl.git?path=sasl-lib
 
     - name: Install pkg and deps
       run: raco pkg install --batch --auto north/
