@@ -25,7 +25,7 @@ jobs:
         version: "8.7"
 
     - name: TEMP Install patched version of sasl-lib
-      run: sudo raco pkg install --scope installation git://github.com/Bogdanp/sasl.git?path=sasl-lib
+      run: sudo raco pkg update --scope installation git://github.com/Bogdanp/sasl.git?path=sasl-lib
 
     - name: Install pkg and deps
       run: raco pkg install --batch --auto north/
