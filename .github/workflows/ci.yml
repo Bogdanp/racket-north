@@ -20,9 +20,9 @@ jobs:
       uses: actions/checkout@master
 
     - name: Install Racket
-      uses: Bogdanp/setup-racket@v1.8.1
+      uses: Bogdanp/setup-racket@v1.9
       with:
-        version: "8.6"
+        version: "8.7"
 
     - name: Install pkg and deps
       run: raco pkg install --batch --auto north/
