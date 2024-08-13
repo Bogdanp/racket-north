@@ -1,7 +1,7 @@
 #lang info
 
 (define license 'BSD-3-Clause)
-(define version "0.5")
+(define version "0.6")
 (define collection "north")
 (define deps
   '("base"
@@ -10,6 +10,7 @@
     "parser-tools-lib"))
 (define build-deps
   '("at-exp-lib"
+    "db-doc"
     "racket-doc"
     "rackunit-lib"
     "scribble-lib"))

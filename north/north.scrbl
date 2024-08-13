@@ -1,6 +1,10 @@
 #lang scribble/manual
 
-@(require (for-label north racket/base))
+@(require (for-label db
+                     north
+                     north/migrate
+                     racket/base
+                     racket/contract/base))
 
 @title{@tt{north}: Database Migrations}
 @author[(author+email "Bogdan Popa" "bogdan@defn.io")]
@@ -353,3 +357,14 @@ following meanings:
   @item{@tt{require} -- fail if a TLS connection cannot be established,}
   @item{@tt{disable} -- don't attempt to use TLS.}
 ]
+
+@subsection{Programmatic Use}
+@defmodule[north/migrate]
+
+@defproc[
+  (migrate [conn connection?]
+           [path (or/c path? path-string?)]) void?
+]{
+  Migrates the database using the given @racket[conn] up to @tt{HEAD}
+  using the migrations defined at @racket[path].
+}
