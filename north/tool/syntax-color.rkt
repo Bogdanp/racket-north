@@ -2,7 +2,7 @@
 
 (require (for-syntax racket/base
                      racket/port
-                     syntax/parse)
+                     syntax/parse/pre)
          parser-tools/lex
          (prefix-in : parser-tools/lex-sre))
 
@@ -28,7 +28,7 @@
 (define lex-string-sq (make-lex-string #\' 'string))
 (define lex-string-dq (make-lex-string #\" 'identifier))
 
-(define-lex-trans (or/ci stx)
+(define-lex-trans (or/ci stx) ;; noqa
   (syntax-parse stx
     [(_ ds:string ...+)
      #:with (ss ...) (for/list ([s (in-list (syntax-e #'(ds ...)))])
@@ -39,7 +39,7 @@
   (define here
     (syntax-source #'here))
 
-  (define (rel . p)
+  (define (rel . p) ;; noqa
     (simplify-path (apply build-path here 'up p))))
 
 (define-syntax (define-trans-from-file stx)

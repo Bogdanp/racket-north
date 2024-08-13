@@ -107,11 +107,11 @@ EOT
                      (exit-with-errors! @~a{error: @(exn-message e)}))]
 
                   [exn:fail?
-                   (lambda (e)
+                   (lambda (_)
                      (exit-with-errors! @~a{error: '@(migrations-path)' folder not found}))])
     (path->migration (migrations-path))))
 
-(define (parse-migrator-args command)
+(define (parse-migrator-args _command)
   (define revision
     (command-line
      #:program (current-program-name)
@@ -296,7 +296,7 @@ EOT
 
 (define-values (command handler args)
   (match (current-command-line-arguments)
-    [(vector command args ...)
+    [(vector command args ...) ;; noqa
      (values command (hash-ref all-commands (string->symbol command) (handle-unknown command)) args)]
 
     [_

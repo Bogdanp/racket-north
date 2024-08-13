@@ -2,10 +2,9 @@
 
 (require (for-syntax racket/base
                      racket/syntax
-                     syntax/parse)
+                     syntax/parse/pre)
          racket/contract/base
          racket/file
-         racket/function
          racket/match
          racket/path)
 
@@ -13,24 +12,25 @@
  (struct-out exn:fail:migration)
 
  (contract-out
-  [struct migration ([metadata hash?]
-                     [child (or/c false/c migration?)])]
-  [path->migration (-> path-string? (or/c false/c migration?))]
-  [migration->list (->* (migration?) (#:stop-at (or/c false/c string?)) (listof migration?))]
+  [struct migration
+    ([metadata hash?]
+     [child (or/c #f migration?)])]
+  [path->migration (-> path-string? (or/c #f migration?))]
+  [migration->list (->* [migration?] [#:stop-at (or/c #f string?)] (listof migration?))]
   [migration-most-recent (-> migration? migration?)]
-  [migration-find-parent (-> migration? string? (or/c false/c migration?))]
-  [migration-find-revision (-> migration? string? (or/c false/c migration?))]
-  [migration-plan (-> migration? (or/c false/c string?) (or/c false/c string?) (listof migration?))]))
+  [migration-find-parent (-> migration? string? (or/c #f migration?))]
+  [migration-find-revision (-> migration? string? (or/c #f migration?))]
+  [migration-plan (-> migration? (or/c #f string?) (or/c #f string?) (listof migration?))]))
 
 (define (migration-path? p)
   (and (not (directory-exists? p))
        (equal? (path-get-extension p) #".sql")))
 
 (define (read-all-metadata path)
-  (map (curryr dynamic-require 'metadata)
-       (find-files migration-path? path)))
+  (for/list ([filename (in-list (find-files migration-path? path))])
+    (dynamic-require filename 'metadata)))
 
-(struct migration (metadata child) #:transparent)
+(struct migration (metadata child) #:transparent) ;; noqa
 (struct exn:fail:migration exn:fail ())
 
 (define-syntax (define-accessor stx)
@@ -40,9 +40,9 @@
      #'(begin
          (define (accessor-id migration)
            (hash-ref (migration-metadata migration) 'id #f))
-
          (provide
-          (contract-out [accessor-id (-> migration? (or/c false/c (~? c-expr string?)))])))]))
+          (contract-out
+           [accessor-id (-> migration? (or/c #f (~? c-expr string?)))])))]))
 
 (define-syntax-rule (define-accessors id ...)
   (begin (define-accessor id) ...))
@@ -143,28 +143,36 @@
   (require rackunit)
 
   (define head
-    (migration (hasheq 'revision "d"
-                       'parent "c"
-                       'name "20190128-alter-users-add-last-login.sql"
-                       'up '("d up")
-                       'down '("d down")) #f))
+    (migration
+     (hasheq
+      'revision "d"
+      'parent "c"
+      'name "20190128-alter-users-add-last-login.sql"
+      'up '("d up")
+      'down '("d down")) #f))
 
   (define base
-    (migration (hasheq 'revision "a"
-                       'parent #f
-                       'name "20190126-create-users-table.sql"
-                       'up '("a up")
-                       'down '("a down"))
-               (migration (hasheq 'revision "b"
-                                  'parent "a"
-                                  'name "20190127-alter-users-add-created-at.sql"
-                                  'up '("b up")
-                                  'down '("b down"))
-                          (migration (hasheq 'revision "c"
-                                             'parent "b"
-                                             'name "20190127-alter-users-add-updated-at.sql"
-                                             'up '("c up")
-                                             'down '("c down")) head))))
+    (migration
+     (hasheq
+      'revision "a"
+      'parent #f
+      'name "20190126-create-users-table.sql"
+      'up '("a up")
+      'down '("a down"))
+     (migration
+      (hasheq
+       'revision "b"
+       'parent "a"
+       'name "20190127-alter-users-add-created-at.sql"
+       'up '("b up")
+       'down '("b down"))
+      (migration
+       (hasheq
+        'revision "c"
+        'parent "b"
+        'name "20190127-alter-users-add-updated-at.sql"
+        'up '("c up")
+        'down '("c down")) head))))
 
   (check-equal?
    (migration-most-recent base)
