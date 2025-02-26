@@ -2,11 +2,14 @@
 
 (require db
          racket/contract/base
+         racket/lazy-require
          racket/match
          "adapter/base.rkt"
-         "adapter/postgres.rkt"
-         "adapter/sqlite.rkt"
          "base.rkt")
+
+(lazy-require
+ ["adapter/postgres.rkt" (postgres-adapter)]
+ ["adapter/sqlite.rkt" (sqlite-adapter)])
 
 (provide
  (contract-out

@@ -4,6 +4,7 @@
          net/url
          racket/contract/base
          racket/format
+         racket/lazy-require
          racket/match
          "base.rkt")
 
@@ -45,7 +46,6 @@ EOQ
            (log-north-adapter-debug "applying revision ~a" revision)
            (for ([script (in-list scripts)])
              (query-exec conn script))
-
            (query-exec conn "DELETE FROM north_schema_version")
            (query-exec conn "INSERT INTO north_schema_version VALUES ($1)" revision)))))])
 

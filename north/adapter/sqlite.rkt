@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS north_schema_version(
   current_revision TEXT NOT NULL
 );
 EOQ
-)
+  )
 
 (struct sqlite-adapter (conn)
   #:methods gen:adapter
@@ -42,7 +42,6 @@ EOQ
            (log-north-adapter-debug "applying revision ~a" revision)
            (for ([script (in-list scripts)])
              (query-exec conn script))
-
            (query-exec conn "DELETE FROM north_schema_version")
            (query-exec conn "INSERT INTO north_schema_version VALUES ($1)" revision)))))])
 
@@ -60,19 +59,16 @@ EOQ
         [(symbol? path) path]
         [(string=? path "") "/"]
         [else path])))
-
   (when (or (null? parts)
             (equal? parts '("")))
     (error 'url->sqlite-adapter "sqlite3 connection URL must contain a path"))
-
   (when (and (url-host url)
              (not (string=? (url-host url) "")))
     (error 'url->sqlite-adapter "sqlite3 connection URL must either start with 0 or 3 slashes"))
-
   (apply build-path parts))
 
 (module+ test
-  (require rackunit)
+  (require net/url rackunit)
 
   (define make
     (compose1 path->string make-db-path string->url))
