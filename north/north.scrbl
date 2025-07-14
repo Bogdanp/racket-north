@@ -344,7 +344,7 @@ environment variable or the @tt{-u} flags to the @exec{raco north
 migrate} and @exec{raco north rollback} commands, must follow this
 format:
 
-@verbatim|{protocol://[username[:password]@]hostname[:port]/database_name[?sslmode=prefer|require|disable]}|
+@verbatim|{protocol://[username[:password]@]hostname[:port]/database_name[?sslmode=prefer|require|disable][&schema=SCHEMA]}|
 
 The @tt{protocol} must be either @tt{sqlite} or @tt{postgres}.
 
@@ -356,6 +356,13 @@ following meanings:
   @item{@tt{prefer} -- try TLS and fall back to plain text if it's not available,}
   @item{@tt{require} -- fail if a TLS connection cannot be established,}
   @item{@tt{disable} -- don't attempt to use TLS.}
+]
+
+The @tt{schema} parameter is used by the PostgreSQL adapter to
+determine which schema to keep track of migrations in.
+
+@history[
+ #:changed "0.8" @elem{Added support for the @tt{schema} parameter.}
 ]
 
 @subsection{Programmatic Use}
