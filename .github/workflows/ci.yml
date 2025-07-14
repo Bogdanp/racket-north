@@ -20,12 +20,9 @@ jobs:
       uses: actions/checkout@master
 
     - name: Install Racket
-      uses: Bogdanp/setup-racket@v1.9
+      uses: Bogdanp/setup-racket@v1.14
       with:
-        version: "8.7"
-
-    - name: TEMP Install patched version of sasl-lib
-      run: sudo raco pkg update --scope installation git://github.com/Bogdanp/sasl.git?path=sasl-lib
+        version: "8.17"
 
     - name: Install pkg and deps
       run: raco pkg install --batch --auto north/
