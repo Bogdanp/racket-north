@@ -20,7 +20,7 @@
   (define adapter
     (match (dbsystem-name (connection-dbsystem conn))
       ['sqlite3 (sqlite-adapter conn)]
-      ['postgresql (postgres-adapter conn)]
+      ['postgresql (postgres-adapter conn "public")]
       [name (error 'migrate "dbsystem not supported: ~a" name)]))
   (adapter-init adapter)
   (define current (adapter-current-revision adapter))
