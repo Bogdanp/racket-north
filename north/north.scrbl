@@ -361,6 +361,12 @@ following meanings:
 The @tt{schema} parameter is used by the PostgreSQL adapter to
 determine which schema to keep track of migrations in.
 
+When using the @tt{sqlite} protocol, you can specify an absolute path to
+a database file by prepending 3 forward slashes to the path (totalling 4
+forward slashes). For example:
+
+@verbatim|{sqlite:////home/someone/db.sqlite3}|
+
 @history[
  #:changed "0.8" @elem{Added support for the @tt{schema} parameter.}
 ]
