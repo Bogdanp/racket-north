@@ -7,9 +7,11 @@
 (define-logger north-adapter)
 
 (define-generics adapter
+  (adapter-lock! adapter)
   (adapter-init adapter)
   (adapter-current-revision adapter)
-  (adapter-apply! adapter revision scripts))
+  (adapter-apply! adapter revision scripts)
+  (adapter-unlock! adapter))
 
 (struct exn:fail:adapter exn:fail (cause))
 (struct exn:fail:adapter:migration exn:fail:adapter (revision))

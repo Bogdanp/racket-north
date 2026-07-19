@@ -14,6 +14,9 @@
      [schema string?])]
   [url->postgres-adapter (-> url? adapter?)]))
 
+(define advisory-lock-key
+  19920529053000)
+
 (define (~table ad)
   (define schema (postgres-adapter-schema ad))
   (format "~s.north_schema_version" schema))
@@ -28,7 +31,11 @@ STMT
 
 (struct postgres-adapter (conn schema)
   #:methods gen:adapter
-  [(define (adapter-init ad)
+  [(define (adapter-lock! ad)
+     (define conn (postgres-adapter-conn ad))
+     (query-exec conn "SELECT pg_advisory_lock($1)" advisory-lock-key))
+
+   (define (adapter-init ad)
      (define conn (postgres-adapter-conn ad))
      (call-with-transaction conn
        (lambda ()
@@ -54,7 +61,11 @@ STMT
            (for ([script (in-list scripts)])
              (query-exec conn script))
            (query-exec conn (format "DELETE FROM ~a" table))
-           (query-exec conn (format "INSERT INTO ~a VALUES ($1)" table) revision)))))])
+           (query-exec conn (format "INSERT INTO ~a VALUES ($1)" table) revision)))))
+
+   (define (adapter-unlock! ad)
+     (define conn (postgres-adapter-conn ad))
+     (query-exec conn "SELECT pg_advisory_unlock($1)" advisory-lock-key))])
 
 (define (url->postgres-adapter url)
   (define (oops message)

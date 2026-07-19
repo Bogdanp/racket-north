@@ -111,23 +111,24 @@ EOT
                      (exit-with-errors! @~a{error: '@(migrations-path)' folder not found}))])
     (path->migration (migrations-path))))
 
-(define (parse-migrator-args _command)
+(define (call-with-migrator proc)
   (define revision
     (command-line
      #:program (current-program-name)
      #:once-each
-     [("-f" "--force") "Unless specified, none of the operations will be applied."
-                       (dry-run? #f)]
-
-     [("-u" "--database-url") url
-                              "The URL with which to connect to the database."
-                              (database-url url)]
-
-     [("-p" "--path") path
-                      "The path to the migrations folder."
-                      (migrations-path path)]
-
-     #:args ([revision #f]) revision))
+     [("-f" "--force")
+      "Unless specified, none of the operations will be applied."
+      (dry-run? #f)]
+     [("-u" "--database-url")
+      URL
+      "The URL with which to connect to the database."
+      (database-url URL)]
+     [("-p" "--path")
+      PATH
+      "The path to the migrations folder."
+      (migrations-path PATH)]
+     #:args ([REVISION #f])
+     REVISION))
 
   (unless (database-url)
     (exit-with-errors! "error: no database url"))
@@ -140,8 +141,23 @@ EOT
   (unless adapter
     (exit-with-errors! "error: no adapter"))
 
-  (adapter-init adapter)
-  (values adapter base (adapter-current-revision adapter) revision))
+  (define ok? #f)
+  (dynamic-wind
+    (lambda ()
+      (adapter-lock! adapter))
+    (lambda ()
+      (adapter-init adapter)
+      (proc adapter base (adapter-current-revision adapter) revision)
+      (set! ok? #t))
+    (lambda ()
+      (with-handlers ([exn:fail?
+                       (lambda (e)
+                         (if ok?
+                             (raise e)
+                             ((error-display-handler)
+                              (format "call-with-migrator: ~a" (exn-message e))
+                              e)))])
+        (adapter-unlock! adapter)))))
 
 (define (display-message message)
   (if (and (dry-run?) (not (string=? message "")))
@@ -178,61 +194,59 @@ EOT
    "  show          print information about each revision"))
 
 (define (handle-migrate)
-  (define-values (adapter base current-revision input-revision)
-    (parse-migrator-args "migrate"))
+  (call-with-migrator
+   (lambda (adapter base current-revision input-revision)
+     (define target-revision
+       (or input-revision (migration-revision (migration-most-recent base))))
 
-  (define target-revision
-    (or input-revision (migration-revision (migration-most-recent base))))
+     (display-message @~a{Current revision: @(or current-revision "base")})
+     (display-message @~a{Target revision: @target-revision})
+     (when (equal? current-revision target-revision)
+       (exit 0))
 
-  (display-message @~a{Current revision: @(or current-revision "base")})
-  (display-message @~a{Target revision: @target-revision})
-  (when (equal? current-revision target-revision)
-    (exit 0))
+     (define plan
+       (migration-plan base current-revision target-revision))
 
-  (define plan
-    (migration-plan base current-revision target-revision))
-
-  (with-handlers ([exn:fail:adapter:migration? exit-with-adapter-error!])
-    (for ([migration plan])
-      (display-message "")
-      (display-message @~a{Applying revision: @(migration-revision migration)})
-      (if (dry-run?)
-          (display-dry-run migration migration-up)
-          (adapter-apply! adapter (migration-revision migration) (migration-up migration))))))
+     (with-handlers ([exn:fail:adapter:migration? exit-with-adapter-error!])
+       (for ([migration plan])
+         (display-message "")
+         (display-message @~a{Applying revision: @(migration-revision migration)})
+         (if (dry-run?)
+             (display-dry-run migration migration-up)
+             (adapter-apply! adapter (migration-revision migration) (migration-up migration))))))))
 
 (define (handle-rollback)
-  (define-values (adapter base current-revision input-revision)
-    (parse-migrator-args "rollback"))
+  (call-with-migrator
+   (lambda (adapter base current-revision input-revision)
+     (define target-migration
+       (if input-revision
+           (migration-find-revision base input-revision)
+           (migration-find-parent base (or current-revision "base"))))
 
-  (define target-migration
-    (if input-revision
-        (migration-find-revision base input-revision)
-        (migration-find-parent base (or current-revision "base"))))
+     (unless target-migration
+       (exit-with-errors! @~a{error: invalid revision '@input-revision'}))
 
-  (unless target-migration
-    (exit-with-errors! @~a{error: invalid revision '@input-revision'}))
+     (define target-revision
+       (match (migration-revision target-migration)
+         ["base" #f]
+         [rev rev]))
 
-  (define target-revision
-    (match (migration-revision target-migration)
-      ["base" #f]
-      [rev rev]))
+     (display-message @~a{WARNING: Never roll back a production database!})
+     (display-message @~a{Current revision: @(or current-revision "base")})
+     (display-message @~a{Target revision: @(or target-revision "base")})
+     (when (equal? current-revision target-revision)
+       (exit-with-errors! "error: nothing to do"))
 
-  (display-message @~a{WARNING: Never roll back a production database!})
-  (display-message @~a{Current revision: @(or current-revision "base")})
-  (display-message @~a{Target revision: @(or target-revision "base")})
-  (when (equal? current-revision target-revision)
-    (exit-with-errors! "error: nothing to do"))
+     (define plan
+       (migration-plan base current-revision target-revision))
 
-  (define plan
-    (migration-plan base current-revision target-revision))
-
-  (with-handlers ([exn:fail:adapter:migration? exit-with-adapter-error!])
-    (for ([migration plan])
-      (display-message "")
-      (display-message @~a{Rolling back revision: @(migration-revision migration)})
-      (if (dry-run?)
-          (display-dry-run migration migration-down)
-          (adapter-apply! adapter (migration-parent migration) (migration-down migration))))))
+     (with-handlers ([exn:fail:adapter:migration? exit-with-adapter-error!])
+       (for ([migration plan])
+         (display-message "")
+         (display-message @~a{Rolling back revision: @(migration-revision migration)})
+         (if (dry-run?)
+             (display-dry-run migration migration-down)
+             (adapter-apply! adapter (migration-parent migration) (migration-down migration))))))))
 
 (define (handle-create)
   (define name
@@ -253,7 +267,7 @@ EOT
       [base (format child-revision-template revision (migration-revision (migration-most-recent base)))]))
 
   (with-handlers ([exn:fail:filesystem:exists?
-                   (lambda _
+                   (lambda (_e)
                      (exit-with-errors! @~a{error: output file '@filename' already exists}))])
     (void (call-with-output-file filename (curry write-string content)))))
 

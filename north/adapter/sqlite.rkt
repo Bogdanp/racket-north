@@ -20,7 +20,10 @@ EOQ
 
 (struct sqlite-adapter (conn)
   #:methods gen:adapter
-  [(define (adapter-init ad)
+  [(define (adapter-lock! _ad)
+     (void))
+
+   (define (adapter-init ad)
      (define conn (sqlite-adapter-conn ad))
      (call-with-transaction conn
        (lambda ()
@@ -43,7 +46,10 @@ EOQ
            (for ([script (in-list scripts)])
              (query-exec conn script))
            (query-exec conn "DELETE FROM north_schema_version")
-           (query-exec conn "INSERT INTO north_schema_version VALUES ($1)" revision)))))])
+           (query-exec conn "INSERT INTO north_schema_version VALUES ($1)" revision)))))
+
+   (define (adapter-unlock! _ad)
+     (void))])
 
 (define (url->sqlite-adapter url)
   (sqlite-adapter

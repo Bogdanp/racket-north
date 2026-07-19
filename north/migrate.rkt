@@ -22,8 +22,23 @@
       ['sqlite3 (sqlite-adapter conn)]
       ['postgresql (postgres-adapter conn "public")]
       [name (error 'migrate "dbsystem not supported: ~a" name)]))
-  (adapter-init adapter)
-  (define current (adapter-current-revision adapter))
-  (define target (migration-revision (migration-most-recent base)))
-  (for ([migration (in-list (migration-plan base current target))])
-    (adapter-apply! adapter (migration-revision migration) (migration-up migration))))
+  (define ok? #f)
+  (dynamic-wind
+    (lambda ()
+      (adapter-lock! adapter))
+    (lambda ()
+      (adapter-init adapter)
+      (define current (adapter-current-revision adapter))
+      (define target (migration-revision (migration-most-recent base)))
+      (for ([migration (in-list (migration-plan base current target))])
+        (adapter-apply! adapter (migration-revision migration) (migration-up migration)))
+      (set! ok? #t))
+    (lambda ()
+      (with-handlers ([exn:fail?
+                       (lambda (e)
+                         (if ok?
+                             (raise e)
+                             ((error-display-handler)
+                              (format "migrate: ~a" (exn-message e))
+                              e)))])
+        (adapter-unlock! adapter)))))
